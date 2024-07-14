@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+	<form action="no" method="get" accept-charset="utf-8">
+		<div class="wrap">
+			<label class="form-label" for="row">row</label>
+			<input class="form-control" type="number" name="row" id="row" value="" required />
+		</div>
+		<div class="wrap">
+			<label class="" for="text">Text</label>
+			<textarea class="form-control" name="text" id="text" cols="30"></textarea>
+		</div>
+		<div class="wrap">
+			<label for="answer">Answer</label>
+			<select class="form-control" name="answer" id="answer">
+			</select>
+		</div>
+		<div class="wrap">
+			<label for="options">Options</label>
+			<input class="form-control" type="text" name="options" id="options" value="" />
+		</div>
+		<div class="wrap">
+			<label for="quote">Quote</label>
+			<input class="form-control" type="text" name="quote" id="quote" value="" />
+		</div>
+	</form>
+	<div class="buttons">
+		<button class="btn btn-primary">Get</button>
+	</div>
+</div>
+{% endblock %}
