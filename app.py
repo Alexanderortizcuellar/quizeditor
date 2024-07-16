@@ -1,11 +1,33 @@
-from flask import Flask, jsonify, render_template, request
-from http import HTTPStatus
-from updater import Updater
+from flask import Flask, abort, jsonify, render_template, request
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy_serializer import SerializerMixin
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from updater import Updater, Quoter
 import random
 
+
+class Base(DeclarativeBase):
+    pass
+
+
+db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db"
+db.init_app(app)
 updater = Updater()
+
+
+class Bible(db.Model, SerializerMixin):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    book: Mapped[int]
+    chapter: Mapped[int]
+    verse: Mapped[int]
+    text: Mapped[str]
+
+
+with app.app_context():
+    db.create_all()
 
 
 @app.route("/")
@@ -36,6 +58,50 @@ def edit():
     return render_template("edit.html")
 
 
+@app.route("/update", methods=["POST"])
+def update():
+    if request.method == "POST":
+        row = request.get_json().get("row")
+        text = request.get_json().get("text")
+        answer = request.get_json().get("answer")
+        options = request.get_json().get("options")
+        quote = request.get_json().get("quote")
+        values = [text, answer, options, quote]
+        success, msg = updater.update_row(values=values, row=int(row))
+        if not success:
+            return jsonify({"error": True, "msg": str(msg)})
+        return jsonify({"result": "success", "error": False, "msg": ""})
+    return abort(405)
+
+
+@app.route("/bible", methods=["POST"])
+def bible():
+    if request.method == "POST":
+        quote = request.get_json().get("quote", "")
+        quoter = Quoter(quote)
+        success = quoter.get_quote()
+        if success is None:
+            return jsonify({"err": "error parsing quote"}), 500
+        print(success)
+        if quoter.verse_to:
+            bible_text = (
+                Bible.query.filter_by(book=quoter.book_index)
+                .filter_by(chapter=quoter.chapter)
+                .filter(Bible.verse.between(quoter.verse_from, quoter.verse_to))
+                .all()
+            )
+        else:
+            bible_text = (
+                Bible.query.filter_by(book=quoter.book_index)
+                .filter_by(chapter=quoter.chapter)
+                .filter_by(verse=quoter.verse_from)
+                .all()
+            )
+        bible_text = [verse.to_dict() for verse in bible_text]
+        return jsonify(bible_text)
+    return abort(405)
+
+
 @app.route("/details/<int:id>")
-def details(id):
+def details():
     return render_template("index.html")

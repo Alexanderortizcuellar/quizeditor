@@ -1,6 +1,6 @@
 from typing import Any, List
 import pygsheets
-# from utils import books_of_the_bible
+from utils import books_of_the_bible
 
 
 def get_ws():
@@ -17,20 +17,23 @@ class Quoter:
     def __init__(self, quote):
         self.quote = quote
         self.book = None
+        self.book_index = None
         self.chapter = None
         self.verse_from = None
         self.verse_to = None
 
     def _get_book(self):
-        for b in books_of_the_bible:
+        for index, b in enumerate(books_of_the_bible):
             if b.lower() in self.quote.lower():
                 self.quote = self.quote.replace(b, "").strip()
+                self.book_index = index + 1
                 return b
         parts = self.quote.split(" ")
         if len(parts) > 1:
             book = parts[0].lower().strip()
-            for b in books_of_the_bible:
+            for index, b in enumerate(books_of_the_bible):
                 if book in b.lower():
+                    self.book_index = index + 1
                     return b
             return None
         return None
@@ -38,7 +41,6 @@ class Quoter:
     def _get_chapter(self):
         chp_vers = self.quote.split(":")
         if len(chp_vers) > 1:
-            print(chp_vers)
             return int(chp_vers[0].strip())
         return None
 
@@ -58,12 +60,13 @@ class Quoter:
             book = self._get_book()
             chapter = self._get_chapter()
             verse = self._get_verse()
-            print(book, chapter, verse)
             if book is not None and chapter is not None and verse is not None:
                 self.book = book
                 self.chapter = chapter
                 self.verse_from = verse[0]
                 self.verse_to = verse[1]
+                if verse[1] is None:
+                    return f"{book} {chapter}:{verse[0]}"
                 return f"{book} {chapter}:{verse[0]}-{verse[1]}"
             return None
         except Exception as e:
@@ -139,12 +142,21 @@ class Updater:
         )
         return question
 
-    def update_row(self, values: List[str]):
+    def update_row(self, values: List[str], row: int):
+        """
+        A list of values to update
+        in the order:
+            1. text: str
+            2. answer: str
+            3. options: str
+            4. quote: str.
+        """
         try:
-            self.ws.update_row(index=1, values=values, col_offset=0)
-            return True
+            self.ws.update_row(index=row, values=values, col_offset=0)
+            return True, None
         except Exception as e:
-            return e
+            print(e)
+            return False, str(e)
 
     def delete_row(self, index: int):
         try:
