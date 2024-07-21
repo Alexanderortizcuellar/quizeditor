@@ -25,21 +25,25 @@ class Quoter:
     def _get_book(self):
         for index, b in enumerate(books_of_the_bible):
             if b.lower() in self.quote.lower():
-                self.quote = self.quote.replace(b, "").strip()
+                self.quote = self.quote.lower().replace(b.lower(), "").strip()
                 self.book_index = index + 1
+                print(b)
                 return b
         parts = self.quote.split(" ")
         if len(parts) > 1:
             book = parts[0].lower().strip()
             for index, b in enumerate(books_of_the_bible):
                 if book in b.lower():
+                    self.quote = self.quote.lower().replace(b.lower(), "").strip()
                     self.book_index = index + 1
+                    print(b)
                     return b
             return None
         return None
 
     def _get_chapter(self):
         chp_vers = self.quote.split(":")
+        print(chp_vers)
         if len(chp_vers) > 1:
             return int(chp_vers[0].strip())
         return None
@@ -69,6 +73,7 @@ class Quoter:
                     return f"{book} {chapter}:{verse[0]}"
                 return f"{book} {chapter}:{verse[0]}-{verse[1]}"
             return None
+
         except Exception as e:
             print(e)
             return None

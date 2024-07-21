@@ -8,11 +8,14 @@ let answerInput = document.querySelector("select#answer");
 let optionsInput = document.querySelector("input#options");
 let quoteInput = document.querySelector("input#quote");
 let rowInput = document.querySelector("input#row");
-let modalW = document.querySelector("#exampleModal")
-let modalBody = document.querySelector("div.modal-picker-body")
-let modalTitle = document.querySelector("h5.modal-picker-title")
-
-let picker = document.querySelector("a.picker")
+let modalW = document.querySelector("#exampleModal");
+let modalBody = document.querySelector("div.modal-picker-body");
+let modalTitle = document.querySelector("h5.modal-picker-title");
+let shuffleBtn = document.querySelector("button.shuffle-btn");
+let picker = document.querySelector("button.picker");
+const toastAlert = document.getElementById('liveToast');
+let toastMsg = document.querySelector("div#liveToast div.message")
+const toast = bootstrap.Toast.getOrCreateInstance(toastAlert);
 let modal = new bootstrap.Modal(modalW, {})
 button.addEventListener("click", () => {
 	getRow();
@@ -25,9 +28,47 @@ picker.addEventListener("click", () => {
 	getBibleText(quoteInput.value);
 })
 
+shuffleBtn.addEventListener("click", () => {
+	shuffle();
+})
+
+optionsInput.addEventListener("keyup", () => {
+	getOptions(optionsInput.value, answerInput)
+})
+
+addCopyEvent();
+
+function addCopyEvent() {
+	let copyBtns = Array.from(document.querySelectorAll("div.wrap div:nth-child(1) button"));
+	let inputs = [rowInput, textInput, answerInput, optionsInput, quoteInput];
+	for (let i = 0; i < inputs.length; i++) {
+		copyBtns[i].addEventListener("click", () => {
+			copyData(inputs[i].value.toString());
+		})
+	}
+}
+
+hideCards()
+
+function hideCards() {
+	let cards = document.querySelectorAll("div.wrap");
+	cards.forEach((card) => {
+		let label = card.querySelector("label");
+		label.addEventListener("click", () => {
+			let other = card.querySelectorAll("div:nth-child(n+2),input:nth-child(n+2), textarea:nth-child(n+2), select:nth-child(n+2)");
+			other.forEach((oth) => {
+				if (oth.classList.contains("d-none")) {
+					oth.classList.remove("d-none");
+				} else {
+					oth.classList.add("d-none");
+				}
+			})
+		})
+	})
+}
 function getBibleText(quote) {
 	if (quote === "") {
-		showAlert("No quote to display", "alert-info");
+		showToast("Empty quote", "error");
 		return
 	}
 	screenLoad.classList.remove("d-none");
@@ -39,7 +80,7 @@ function getBibleText(quote) {
 		}
 	}).then((data) => {
 		if (data.status != 200) {
-			throw new Error("Eror parsing quote");
+			throw new Error(`Error parsing quote "${quote}"`);
 		}
 		return data.json();
 	}).then((data) => {
@@ -49,7 +90,7 @@ function getBibleText(quote) {
 
 	}).catch((err) => {
 		screenLoad.classList.add("d-none");
-		showAlert(err, "alert-danger")
+		showToast(err, "error");
 	})
 }
 
@@ -75,10 +116,10 @@ function updateRow() {
 			throw new Error(err.msg);
 		}
 		screenLoad.classList.add("d-none");
-		showAlert("success", "alert-success")
+		showToast("successfully updated!", "success")
 	}).catch((err) => {
 		screenLoad.classList.add("d-none");
-		showAlert(err, "alert-danger");
+		showToast(err, "error")
 	})
 }
 
@@ -134,6 +175,28 @@ function showAlert(msg, category) {
 	}, 3000)
 }
 
+
+function showToast(msg, type) {
+	let icon = toastAlert.querySelector("i");
+	if (type == "success") {
+		icon.classList.remove("bi-exclamation-circle-fill");
+		icon.classList.add("bi-check-lg");
+		toastAlert.style.backgroundColor = "#d9f3d3"
+		icon.style.removeProperty("color")
+		icon.style.color = "#5b7555";
+		toastMsg.style.color = "#5b7555"
+	} else {
+		icon.classList.remove("bi-check-lg");
+		icon.classList.add("bi-exclamation-circle-fill");
+		toastAlert.style.backgroundColor = "rgba(242,198,195,255)"
+		icon.style.removeProperty("color")
+		icon.style.color = "#bb1832"
+		toastMsg.style.color = "#bb1832"
+	}
+	toastMsg.innerText = msg;
+	toast.show();
+}
+
 function parseVerses(verses, quote) {
 	modalBody.innerHTML = "";
 	for (const verse of verses) {
@@ -148,4 +211,21 @@ function parseVerses(verses, quote) {
 		p.appendChild(spanText);
 		modalBody.appendChild(p);
 	}
+}
+
+function choice(items) {
+	return items[Math.floor(Math.random() * items.length)];
+}
+
+function shuffle() {
+	let options = optionsInput.value.split("|");
+	let shuffled = options
+		.map(value => ({value, sort: Math.random()}))
+		.sort((a, b) => a.sort - b.sort)
+		.map(({value}) => value);
+	optionsInput.value = shuffled.join("|");
+}
+
+function copyData(data) {
+	navigator.clipboard.writeText(data);
 }

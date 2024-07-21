@@ -3,19 +3,33 @@
 {% block content %}
 <div class="container p-1 py-2">
 	<div class="">
+		<div class="toast-container position-fixed bottom-0 end-0 p-3">
+			<div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"
+				style="background-color: rgba(242,198,195,255);">
+				<div class="toast-body d-flex align-items-center justify-content-start">
+					<i class="bi bi-exclamation-circle-fill fw-bold"
+						style="color: #bb1832;margin-right: 12px;"></i>
+					<div class="message text-start" style="color: #bb1832">Error parsing
+						quote</div>
+					<button type="button" class="btn-close" data-bs-dismiss="toast"
+						aria-label="Close" style="color: #bb1832;margin-left: auto;"></button>
+				</div>
+			</div>
+		</div>
 		<!-- Modal -->
 		<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog"
 			aria-labelledby="exampleModalLabel" aria-hidden="true">
 			<div class="modal-dialog" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title modal-picker-title" id="exampleModalLabel">Bible Text</h5>
+						<h5 class="modal-title modal-picker-title" id="exampleModalLabel">Bible
+							Text</h5>
 						<button type="button" class="btn btn-close" data-bs-dismiss="modal"
 							aria-label="Close">
 						</button>
 					</div>
 					<div class="modal-body modal-picker-body">
-						
+
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary"
@@ -26,33 +40,102 @@
 		</div>
 	</div>
 	<h3>Update Questions</h3>
-	<form action="no" method="get" accept-charset="utf-8">
-		<div class="wrap mb-2">
-			<label class="form-label fw-bold" for="row">row</label>
-			<input class="form-control" type="number" name="row" id="row" value="" required />
-		</div>
-		<div class="wrap mb-2">
-			<label class="form-label fw-bold" for="text">Text</label>
-			<textarea class="form-control" name="text" id="text" cols="30"></textarea>
-		</div>
-		<div class="wrap mb-2">
-			<label class="form-label fw-bold" for="answer">Answer</label>
-			<select class="form-control" name="answer" id="answer">
-			</select>
-		</div>
-		<div class="wrap mb-2">
-			<label class="form-label fw-bold" for="options">Options</label>
-			<input class="form-control" type="text" name="options" id="options" value="" />
-		</div>
-		<div class="wrap mb-2">
-			<label class="form-label fw-bold" for="quote">Quote</label>
-			<div class="d-flex gap-1">
-				<input class="form-control" type="text" name="quote" id="quote" value="" />
-				<a class="btn btn-primary picker" href="#">Pick</a>
+	<form action="#" method="get" accept-charset="utf-8">
+		<div class="wrap mb-2 card p-2">
+			<div class="d-flex justify-content-between align-items-center py-1 bg rounded">
+				<label class="form-label fw-bold" for="row">row</label>
+				<button type="button" class="btn btn-secondary btn-sm"><i
+						class="bi bi-copy mx-1 copy-row"></i></button>
+			</div>
+			<input class="form-control d-none" type="number" name="row" id="row" style="color: #474747;"
+				value="" required />
+			<div class="wrap-details d-none">
+				<a class="small" href="#">More Actions</a>
 			</div>
 		</div>
-		<div class="wrap">
-			<a href="#">Quote Details</a>
+		<div class="wrap mb-2 card p-2">
+			<div class="d-flex justify-content-between align-items-center py-1">
+				<label class="form-label fw-bold" for="text">Text</label>
+				<button type="button" class="btn btn-secondary btn-sm"><i
+						class="bi bi-copy mx-1 copy-text"></i></button>
+			</div>
+			<textarea class="form-control" name="text" id="text" cols="30" style="color: #474747;">
+			</textarea>
+			<div class="wrap-details">
+				<a class="small" href="#details-text" data-bs-toggle="collapse" role="button"
+					aria-expanded="false" aria-controls="details-text">More Actions</a>
+				<div class="details-inner p-2 collapse" id="details-text">
+					<div class="card p-1">
+						<div class="card-header">
+							<span class="text-muted mb-2">Look up text</span>
+						</div>
+						<div class="card-body">
+							<a href="#" class="btn btn-primary btn-sm rounded"
+								style="width:max-content">lookup word</a>
+							<a href="#" class="btn btn-primary btn-sm rounded"
+								style="width:max-content">Bible search</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="wrap mb-2 card p-2">
+			<div class="d-flex justify-content-between align-items-center py-1">
+				<label class="form-label fw-bold" for="answer">Answer</label>
+				<button type="button" class="btn btn-secondary btn-sm"><i
+						class="bi bi-copy mx-1 copy-answer"></i></button>
+			</div>
+			<select class="form-select" name="answer" id="answer" style="color: #474747;">
+			</select>
+			<div class="wrap-details">
+				<a class="small" href="#">More Actions</a>
+			</div>
+		</div>
+		<div class="wrap mb-2 card p-2">
+			<div class="d-flex justify-content-between align-items-center py-1">
+				<label class="form-label fw-bold" for="options">Options</label>
+
+				<button type="button" class="btn btn-secondary btn-sm"><i
+						class="bi bi-copy mx-1 copy-options"></i></button>
+			</div>
+			<div class="d-flex gap-1 align-items-center">
+				<input class="form-control" type="text" name="options" id="options"
+					style="color: #474747;" value="" />
+				<div class="wrap-btn dropdown">
+					<button type="button" class="btn btn-primary btn-sm shuffle-btn dropdown-toggle"
+						data-bs-toggle="dropdown">
+						Suffle
+					</button>
+					<ul class="dropdown-menu">
+						<li><a class="dropdown-item" href="#">Shuffle</a></li>
+						<li><a class="dropdown-item" href="#">Sort &#8593;</a></li>
+						<li><a class="dropdown-item" href="#">Sort &#8595</a></li>
+					</ul>
+				</div>
+			</div>
+			<div class="wrap-details">
+				<a class="small" href="#">More Actions</a>
+			</div>
+		</div>
+		<div class="wrap mb-2 card p-2">
+			<div class="d-flex justify-content-between align-items-center py-1">
+				<label class="form-label fw-bold" for="quote">Quote</label>
+				<button type="button" class="btn btn-secondary btn-sm copy-quote"><i
+						class="bi bi-copy mx-1"></i></button>
+			</div>
+			<div class="d-flex gap-1 align-items-center">
+				<input class="form-control" type="text" name="quote" id="quote" value=""
+					style="color: #474747;" />
+				<div class="wrap-btn">
+					<button type="button" class="btn btn-primary btn-sm picker">Pick</button>
+				</div>
+			</div>
+			<div class="wrap-details">
+				<a class="small" href="#">More Actions</a>
+				<div class="details-inner" id="details-quote">
+
+				</div>
+			</div>
 		</div>
 	</form>
 	<div class="buttons py-2 mt-3">

@@ -32,7 +32,7 @@ with app.app_context():
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("home.html")
 
 
 @app.route("/fetch")
@@ -42,7 +42,6 @@ def get_question():
         question = updater.get_question(rand)
     except Exception as err:
         return jsonify({"error": True, "msg": str(err)}), 500
-
     return jsonify(question.to_json() | {"error": False})
 
 
@@ -99,6 +98,29 @@ def bible():
             )
         bible_text = [verse.to_dict() for verse in bible_text]
         return jsonify(bible_text)
+    return abort(405)
+
+
+@app.route("/bible/search", methods=["POST"])
+def search():
+    query = request.args.get("query")
+    page = request.args.get("page", 1)
+    if request.method == "POST":
+        results = Bible.query.filter(Bible.text.contains(query)).paginate(
+            page=int(page), per_page=30
+        )
+        results_list = [text.to_dict() for text in results]
+        return jsonify(
+            {
+                "query": query,
+                "results": results_list,
+                "page": page,
+                "next": results.next_num,
+                "previous": results.prev_num,
+                "total_pages": results.pages,
+                "total-matches": results.total,
+            }
+        )
     return abort(405)
 
 
