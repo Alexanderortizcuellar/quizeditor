@@ -2,6 +2,7 @@
 
 body {
 	height: 100dvh;
+	background-color: #f3f3f3;
 }
 
 * {
@@ -21,7 +22,7 @@ body {
 .loading-screen {
 	width: 250px;
 	height: 250px;
-	background-color: rgba(0, 0, 0, 0.22);
+	background-color: rgba(0, 0, 0, 0);
 	display: flex;
 	align-items: center;
 	justify-content: center;
