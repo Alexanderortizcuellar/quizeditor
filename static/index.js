@@ -55,7 +55,7 @@ function hideCards() {
 	cards.forEach((card) => {
 		let label = card.querySelector("label");
 		label.addEventListener("click", () => {
-			let other = card.querySelectorAll("div:nth-child(n+2),input:nth-child(n+2), textarea:nth-child(n+2), select:nth-child(n+2)");
+			let other = card.querySelectorAll("div.wrap-details,div.wrap-actions,input:nth-child(n+2), textarea:nth-child(n+2), select:nth-child(n+2)");
 			other.forEach((oth) => {
 				if (oth.classList.contains("d-none")) {
 					oth.classList.remove("d-none");

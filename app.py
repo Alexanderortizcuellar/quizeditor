@@ -1,3 +1,4 @@
+from time import sleep
 from flask import Flask, abort, jsonify, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_serializer import SerializerMixin
@@ -40,6 +41,7 @@ def get_question():
     try:
         rand = random.randint(1, 10000)
         question = updater.get_question(rand)
+        sleep(5)
     except Exception as err:
         return jsonify({"error": True, "msg": str(err)}), 500
     return jsonify(question.to_json() | {"error": False})
