@@ -1,7 +1,9 @@
+let verseTemplate = document.querySelector("div.template .verse-con");
 let spinner = document.querySelector("div.spin");
 let screenLoad = document.querySelector("div.loading-screen");
 let button = document.querySelector("button#fetch");
 let buttonUpdate = document.querySelector("button#update");
+let buttonDelete = document.querySelector("button#delete");
 let alertDiv = document.querySelector("div.alert");
 let textInput = document.querySelector("textarea#text");
 let answerInput = document.querySelector("select#answer");
@@ -11,21 +13,73 @@ let rowInput = document.querySelector("input#row");
 let modalW = document.querySelector("#exampleModal");
 let modalBody = document.querySelector("div.modal-picker-body");
 let modalTitle = document.querySelector("h5.modal-picker-title");
+let modalInput = document.querySelector("#bible-search-modal");
+let modalSearchBibleW = document.querySelector("#bibleSearchModal");
+let modalSearchBibleBody = document.querySelector("div.modal-bible-search-body");
+let modalSearchBibleTitle = document.querySelector("div.modal-bible-search-title");
+let modalSearchBibleBtn = document.querySelector("button#modal-bible-search-btn")
+let modalSearchBibleInput = document.querySelector("input#modal-bible-search-input");
 let shuffleBtn = document.querySelector("button.shuffle-btn");
 let picker = document.querySelector("button.picker");
 const toastAlert = document.getElementById('liveToast');
 let toastMsg = document.querySelector("div#liveToast div.message")
 const toast = bootstrap.Toast.getOrCreateInstance(toastAlert);
 let modal = new bootstrap.Modal(modalW, {})
+let modalSearchBible = new bootstrap.Modal(modalSearchBibleW, {})
+let cards = document.querySelectorAll("div.wrap");
+let togleAll = document.querySelector("a.toggle-all");
+let inputChip = document.querySelector("input#chip-entry");
+inputChip.addEventListener("keypress", (event) => {
+	if (event.key === "Enter") {
+		event.preventDefault();
+		if (inputChip.value != '') {
+			let div = document.createElement("div");
+			div.innerText = inputChip.value;
+			div.classList.add("chip");
+			div.classList.add("text-secondary");
+			inputChip.before(div);
+			inputChip.value = "";
+		}
+	}
+})
+togleAll.addEventListener("click", (event) => {
+	if (event.currentTarget.innerText.toLowerCase() == "hide all") {
+		toggleCards(true);
+		event.currentTarget.innerText = "Show all";
+	} else {
+		toggleCards(false);
+		event.currentTarget.innerText = "Hide all";
+	}
+})
+
+modalInput.addEventListener("keyup", () => {
+	let verses = modalBody.querySelectorAll("p");
+	verses.forEach((verse) => {
+		if (!verse.innerText.toLowerCase().includes(modalInput.value.toLowerCase())) {
+			verse.classList.add("d-none");
+		} else {
+			verse.classList.remove("d-none");
+		}
+
+	})
+})
+modalSearchBibleBtn.addEventListener("click", ()=>{
+	let query = modalSearchBibleInput.value;
+	searchBible(query, 1);
+})
 button.addEventListener("click", () => {
 	getRow();
 });
 buttonUpdate.addEventListener("click", () => {
 	updateRow();
 });
+buttonDelete.addEventListener("click", () => {
+	deleteRow(rowInput.value);
+})
 
 picker.addEventListener("click", () => {
 	getBibleText(quoteInput.value);
+	//searchBible("in the beginning", 1);
 })
 
 shuffleBtn.addEventListener("click", () => {
@@ -36,7 +90,10 @@ optionsInput.addEventListener("keyup", () => {
 	getOptions(optionsInput.value, answerInput)
 })
 
+
 addCopyEvent();
+toggleCards(true)
+
 
 function addCopyEvent() {
 	let copyBtns = Array.from(document.querySelectorAll("div.wrap div:nth-child(1) button"));
@@ -48,10 +105,9 @@ function addCopyEvent() {
 	}
 }
 
-hideCards()
+hideCardsEvent()
 
-function hideCards() {
-	let cards = document.querySelectorAll("div.wrap");
+function hideCardsEvent() {
 	cards.forEach((card) => {
 		let label = card.querySelector("label");
 		label.addEventListener("click", () => {
@@ -66,9 +122,45 @@ function hideCards() {
 		})
 	})
 }
+
+function toggleCards(hide) {
+	cards.forEach((card) => {
+		let other = card.querySelectorAll("div.wrap-details,div.wrap-actions,input:nth-child(n+2), textarea:nth-child(n+2), select:nth-child(n+2)");
+		other.forEach((oth) => {
+			if (!hide) {
+				oth.classList.remove("d-none");
+			} else {
+				oth.classList.add("d-none");
+			}
+		})
+	})
+}
+
+function searchBible(query, page) {
+	screenLoad.classList.remove("d-none");
+	fetch(`/bible/search?query=${query}&page=${page}`)
+		.then(response => {
+			if (!response.ok) {
+				throw new Error('Network response was not ok ' + response.statusText);
+			}
+			return response.json();
+		})
+		.then(data => {
+			screenLoad.classList.add("d-none");
+			parseResults(data, query);
+		})
+		.catch(error => {
+			screenLoad.classList.add("d-none");
+			showToast(error, "error")
+			console.error('There was a problem with the fetch operation:', error);
+		});
+}
 function getBibleText(quote) {
 	if (quote === "") {
 		showToast("Empty quote", "error");
+		return
+	}
+	if (!validateQuote(quote)) {
 		return
 	}
 	screenLoad.classList.remove("d-none");
@@ -85,7 +177,7 @@ function getBibleText(quote) {
 		return data.json();
 	}).then((data) => {
 		screenLoad.classList.add("d-none");
-		parseVerses(data, quote)
+		parseVerses(data, quote);
 		modal.show();
 
 	}).catch((err) => {
@@ -95,7 +187,6 @@ function getBibleText(quote) {
 }
 
 function updateRow() {
-	screenLoad.classList.remove("d-none");
 	let values = {
 		row: rowInput.value,
 		text: textInput.value,
@@ -103,6 +194,16 @@ function updateRow() {
 		options: optionsInput.value,
 		quote: quoteInput.value
 	}
+	for (const value of Object.values(values)) {
+		if (value == "") {
+			showToast(`Please, Complete all fields.`, "error");
+			return
+		}
+	}
+	if (!validateQuote(values.quote)) {
+		return false
+	}
+	screenLoad.classList.remove("d-none");
 	fetch("/update", {
 		method: "POST",
 		body: JSON.stringify(values),
@@ -149,6 +250,40 @@ function getRow() {
 		});
 }
 
+function deleteRow(row) {
+	if (rowInput.value == "") {
+		showToast("Invalid Id value", "error");
+		return;
+	}
+	screenLoad.classList.remove("d-none");
+	fetch(`/delete/${row}`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			row: row,
+		})
+	})
+		.then(response => {
+			if (!response.ok) {
+				throw new Error('Network response was not ok ' + response.statusText);
+			}
+			return response.json();
+		})
+		.then(data => {
+			if (data.error) {
+				throw new Error("Server responded with error.");
+			}
+			screenLoad.classList.add("d-none");
+			showToast("Successfully deleted record", "success");
+		})
+		.catch(error => {
+			screenLoad.classList.add("d-none");
+			showToast(error, "error");
+		});
+
+}
 function getOptions(options, select) {
 	select.innerHTML = "";
 	for (const opt of options.split("|")) {
@@ -213,6 +348,25 @@ function parseVerses(verses, quote) {
 	}
 }
 
+function parseResults(results, query) {
+	let versesCon = modalSearchBibleBody.querySelector("div.verses-wrap");
+	versesCon.innerHTML = "";
+	modalSearchBibleW.querySelector(".stats").innerText = `${results.totalMatches} results match ${query}`
+	for (const verse of results.results) {
+		let verseCon = verseTemplate.cloneNode(true);
+		let a = verseCon.querySelector("a")
+		a.innerText = `${verse.book.long_name} ${verse.chapter}:${verse.verse}`
+		a.addEventListener("click", (evt)=>{
+			getBibleText(evt.currentTarget.innerText)
+		})
+		verseCon.querySelector("span").innerText = verse.text;
+		verseCon.querySelector("b").innerText = verse.verse;
+		versesCon.appendChild(verseCon)
+		console.log(query)
+	}
+
+}
+
 function choice(items) {
 	return items[Math.floor(Math.random() * items.length)];
 }
@@ -223,9 +377,21 @@ function shuffle() {
 		.map(value => ({value, sort: Math.random()}))
 		.sort((a, b) => a.sort - b.sort)
 		.map(({value}) => value);
-	optionsInput.value = shuffled.join("|");
+	let shuffledOptions = shuffled.join("|");
+	optionsInput.value = shuffledOptions;
+	getOptions(shuffledOptions, answerInput)
 }
 
 function copyData(data) {
 	navigator.clipboard.writeText(data);
+}
+
+function validateQuote(quote) {
+	let pattern = /^[1-3]?\s*[a-zA-Z]+\s*\d+:\d+-?\d*$/;
+	let result = pattern.exec(quote);
+	if (result == null) {
+		showToast("Invalid Bible address", "error");
+		return false;
+	}
+	return true;
 }

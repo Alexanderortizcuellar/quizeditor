@@ -1,7 +1,9 @@
+from typing import List
 from flask import Flask, abort, jsonify, render_template, request
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import ForeignKey
 from sqlalchemy_serializer import SerializerMixin
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 from updater import Updater, Quoter
 import random
 
@@ -19,11 +21,22 @@ updater = Updater()
 
 
 class Bible(db.Model, SerializerMixin):
+    # serialize_rules = ("-book",)
     id: Mapped[int] = mapped_column(primary_key=True)
-    book: Mapped[int]
+    book_id: Mapped[int] = mapped_column(ForeignKey("book.id"), name="book")
     chapter: Mapped[int]
     verse: Mapped[int]
     text: Mapped[str]
+    book: Mapped["Book"] = relationship(back_populates="verses")
+
+
+class Book(db.Model, SerializerMixin):
+    serialize_rules = ("-verses", )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    short_name: Mapped[str]
+    long_name: Mapped[str]
+    color: Mapped[str]
+    verses: Mapped[List["Bible"]] = relationship(back_populates="book")
 
 
 with app.app_context():
@@ -67,9 +80,24 @@ def update():
         quote = request.get_json().get("quote")
         values = [text, answer, options, quote]
         success, msg = updater.update_row(values=values, row=int(row))
+        # success, msg = False, str("")
         if not success:
             return jsonify({"error": True, "msg": str(msg)})
         return jsonify({"result": "success", "error": False, "msg": ""})
+    return abort(405)
+
+
+@app.route("/delete/<int:id>", methods=["POST"])
+def delete_question(id: int):
+    if request.method == "POST":
+        success, err = updater.delete_row(id)
+        if not success:
+            return jsonify({
+                "success": False,
+                "error": True,
+                "msg": str(err)
+            }), 200
+        return jsonify({"success": True})
     return abort(405)
 
 
@@ -81,47 +109,38 @@ def bible():
         success = quoter.get_quote()
         if success is None:
             return jsonify({"err": "error parsing quote"}), 500
-        print(success)
         if quoter.verse_to:
-            bible_text = (
-                Bible.query.filter_by(book=quoter.book_index)
-                .filter_by(chapter=quoter.chapter)
-                .filter(Bible.verse.between(quoter.verse_from, quoter.verse_to))
-                .all()
-            )
+            bible_text = (Bible.query.filter_by(
+                book_id=quoter.book_index).filter_by(
+                    chapter=quoter.chapter).filter(
+                        Bible.verse.between(quoter.verse_from,
+                                            quoter.verse_to)).all())
         else:
-            bible_text = (
-                Bible.query.filter_by(book=quoter.book_index)
-                .filter_by(chapter=quoter.chapter)
-                .filter_by(verse=quoter.verse_from)
-                .all()
-            )
+            bible_text = (Bible.query.filter_by(
+                book_id=quoter.book_index).filter_by(
+                    chapter=quoter.chapter).filter_by(
+                        verse=quoter.verse_from).all())
         bible_text = [verse.to_dict() for verse in bible_text]
         return jsonify(bible_text)
     return abort(405)
 
 
-@app.route("/bible/search", methods=["POST"])
+@app.route("/bible/search", methods=["GET"])
 def search():
     query = request.args.get("query")
     page = request.args.get("page", 1)
-    if request.method == "POST":
-        results = Bible.query.filter(Bible.text.contains(query)).paginate(
-            page=int(page), per_page=30
-        )
-        results_list = [text.to_dict() for text in results]
-        return jsonify(
-            {
-                "query": query,
-                "results": results_list,
-                "page": page,
-                "next": results.next_num,
-                "previous": results.prev_num,
-                "total_pages": results.pages,
-                "total-matches": results.total,
-            }
-        )
-    return abort(405)
+    results = Bible.query.filter(Bible.text.contains(query)).paginate(
+        page=int(page), per_page=10)
+    results_list = [text.to_dict() for text in results]
+    return jsonify({
+        "query": query,
+        "results": results_list,
+        "page": page,
+        "next": results.next_num,
+        "previous": results.prev_num,
+        "totalPages": results.pages,
+        "totalMatches": results.total,
+    })
 
 
 @app.route("/details/<int:id>")
