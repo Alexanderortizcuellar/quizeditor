@@ -34,9 +34,18 @@ inputChip.addEventListener("keypress", (event) => {
 		event.preventDefault();
 		if (inputChip.value != '') {
 			let div = document.createElement("div");
-			div.innerText = inputChip.value;
+			let closeBtn = document.querySelector("div.close-chip-tpl");
+			closeBtn = closeBtn.cloneNode(true);
+			closeBtn.classList.remove("close-chip-tpl");
+			closeBtn.addEventListener("click", () => {
+				div.remove();
+			})
+			div.innerHTML = `<span class="text-truncate">${inputChip.value}</span>`;
+			div.appendChild(closeBtn);
 			div.classList.add("chip");
-			div.classList.add("text-secondary");
+			div.classList.add("text-dark");
+			div.id = "chip-" + Date.now();
+			
 			inputChip.before(div);
 			inputChip.value = "";
 		}

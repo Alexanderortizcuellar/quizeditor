@@ -131,6 +131,9 @@ def search():
     page = request.args.get("page", 1)
     results = Bible.query.filter(Bible.text.contains(query)).paginate(
         page=int(page), per_page=10)
+    pages = []
+    for pagenum in results.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1):
+        pages.append(pagenum)
     results_list = [text.to_dict() for text in results]
     return jsonify({
         "query": query,
@@ -140,6 +143,7 @@ def search():
         "previous": results.prev_num,
         "totalPages": results.pages,
         "totalMatches": results.total,
+        "pages": pages
     })
 
 
