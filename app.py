@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import ForeignKey
 from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
+from deep_translator import GoogleTranslator
 from updater import Updater, Quoter
 import random
 
@@ -31,7 +32,7 @@ class Bible(db.Model, SerializerMixin):
 
 
 class Book(db.Model, SerializerMixin):
-    serialize_rules = ("-verses", )
+    serialize_rules = ("-verses",)
     id: Mapped[int] = mapped_column(primary_key=True)
     short_name: Mapped[str]
     long_name: Mapped[str]
@@ -92,11 +93,7 @@ def delete_question(id: int):
     if request.method == "POST":
         success, err = updater.delete_row(id)
         if not success:
-            return jsonify({
-                "success": False,
-                "error": True,
-                "msg": str(err)
-            }), 200
+            return jsonify({"success": False, "error": True, "msg": str(err)}), 200
         return jsonify({"success": True})
     return abort(405)
 
@@ -110,16 +107,19 @@ def bible():
         if success is None:
             return jsonify({"err": "error parsing quote"}), 500
         if quoter.verse_to:
-            bible_text = (Bible.query.filter_by(
-                book_id=quoter.book_index).filter_by(
-                    chapter=quoter.chapter).filter(
-                        Bible.verse.between(quoter.verse_from,
-                                            quoter.verse_to)).all())
+            bible_text = (
+                Bible.query.filter_by(book_id=quoter.book_index)
+                .filter_by(chapter=quoter.chapter)
+                .filter(Bible.verse.between(quoter.verse_from, quoter.verse_to))
+                .all()
+            )
         else:
-            bible_text = (Bible.query.filter_by(
-                book_id=quoter.book_index).filter_by(
-                    chapter=quoter.chapter).filter_by(
-                        verse=quoter.verse_from).all())
+            bible_text = (
+                Bible.query.filter_by(book_id=quoter.book_index)
+                .filter_by(chapter=quoter.chapter)
+                .filter_by(verse=quoter.verse_from)
+                .all()
+            )
         bible_text = [verse.to_dict() for verse in bible_text]
         return jsonify(bible_text)
     return abort(405)
@@ -129,22 +129,41 @@ def bible():
 def search():
     query = request.args.get("query")
     page = request.args.get("page", 1)
+    page_items = request.args.get("perPage", 10)
     results = Bible.query.filter(Bible.text.contains(query)).paginate(
-        page=int(page), per_page=10)
+        page=int(page), per_page=int(page_items)
+    )
     pages = []
-    for pagenum in results.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1):
+    for pagenum in results.iter_pages(
+        left_edge=1, right_edge=1, left_current=1, right_current=1
+    ):
         pages.append(pagenum)
     results_list = [text.to_dict() for text in results]
-    return jsonify({
-        "query": query,
-        "results": results_list,
-        "page": page,
-        "next": results.next_num,
-        "previous": results.prev_num,
-        "totalPages": results.pages,
-        "totalMatches": results.total,
-        "pages": pages
-    })
+    return jsonify(
+        {
+            "query": query,
+            "results": results_list,
+            "page": page,
+            "next": results.next_num,
+            "previous": results.prev_num,
+            "totalPages": results.pages,
+            "totalMatches": results.total,
+            "pages": pages,
+        }
+    )
+
+
+@app.route("/translate")
+def translate():
+    try:
+        source = request.args.get("source", "en")
+        target = request.args.get("target", "en")
+        text = request.args.get("text", "")
+        translator = GoogleTranslator(source, target)
+        translated_text = translator.translate(text)
+    except Exception as e:
+        return jsonify({"error": True, "msg": str(e)})
+    return jsonify({"error": False, "translation": translated_text})
 
 
 @app.route("/details/<int:id>")

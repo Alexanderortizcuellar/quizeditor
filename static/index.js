@@ -45,12 +45,13 @@ inputChip.addEventListener("keypress", (event) => {
 			div.classList.add("chip");
 			div.classList.add("text-dark");
 			div.id = "chip-" + Date.now();
-			
+
 			inputChip.before(div);
 			inputChip.value = "";
 		}
 	}
 })
+
 togleAll.addEventListener("click", (event) => {
 	if (event.currentTarget.innerText.toLowerCase() == "hide all") {
 		toggleCards(true);
@@ -72,7 +73,7 @@ modalInput.addEventListener("keyup", () => {
 
 	})
 })
-modalSearchBibleBtn.addEventListener("click", ()=>{
+modalSearchBibleBtn.addEventListener("click", () => {
 	let query = modalSearchBibleInput.value;
 	searchBible(query, 1);
 })
@@ -88,7 +89,6 @@ buttonDelete.addEventListener("click", () => {
 
 picker.addEventListener("click", () => {
 	getBibleText(quoteInput.value);
-	//searchBible("in the beginning", 1);
 })
 
 shuffleBtn.addEventListener("click", () => {
@@ -293,6 +293,31 @@ function deleteRow(row) {
 		});
 
 }
+
+function getDefinition(word) {
+	fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+		.then(response => {
+			if (!response.ok) {
+				throw new Error('Network response was not ok ' + response.statusText);
+			}
+			return response.json();
+		})
+		.then(data => {
+			//let drillData = data[0]["meanings"][1]["definitions"][1]
+			let str = "";
+			for (const item of data[0]["meanings"]) {
+				str += item['partOfSpeech'] + "\n________\n\t";
+				//str += JSON.stringify(item)
+				for (const def of item["definitions"]) {
+					str += "\u2022 "+ def["definition"] + "\n\t" + "- Ex. " + def["example"] + "\n"
+				}
+			}
+			showToast(str, "success")
+		})
+		.catch(error => {
+			console.error('There was a problem with the fetch operation:', error);
+		});
+}
 function getOptions(options, select) {
 	select.innerHTML = "";
 	for (const opt of options.split("|")) {
@@ -365,7 +390,7 @@ function parseResults(results, query) {
 		let verseCon = verseTemplate.cloneNode(true);
 		let a = verseCon.querySelector("a")
 		a.innerText = `${verse.book.long_name} ${verse.chapter}:${verse.verse}`
-		a.addEventListener("click", (evt)=>{
+		a.addEventListener("click", (evt) => {
 			getBibleText(evt.currentTarget.innerText)
 		})
 		verseCon.querySelector("span").innerText = verse.text;

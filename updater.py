@@ -6,7 +6,7 @@ import re
 
 def get_ws():
     file = (
-        r"C:\Users\ASUS\data\disco-sky-323017-a6c78dad7fb7.json"
+        r"/data/data/com.termux/files/home/bin/data/disco-sky-323017-a6c78dad7fb7.json"
     )
     client = pygsheets.authorize(service_account_file=file)
     sheet = client.open("all-questions")
